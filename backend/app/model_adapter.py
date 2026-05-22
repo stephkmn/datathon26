@@ -1,13 +1,12 @@
-# backend/app/model_adapter.py
-
 import hashlib
 import os
 from pathlib import Path
 from typing import Any
 
 import numpy as np
-from PIL import Image, ImageOps
+from PIL import Image
 from dotenv import load_dotenv
+from torchvision import transforms
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
@@ -23,6 +22,7 @@ PLACEHOLDER_EXPLANATION = (
     "Explanation placeholder."
 )
 
+# Verify model path
 def _resolve_model_path(model_path: str) -> str:
     if not model_path.strip():
         return ""
@@ -91,7 +91,7 @@ _load_error: str | None = None
 class ModelAdapterError(RuntimeError):
     """Raised when the configured model cannot produce a valid prediction."""
 
-
+# --- LOAD MODEL ---
 def _load_onnx_model() -> None:
     global _onnx_input_name, _onnx_input_rank, _onnx_session, _load_error
 
@@ -124,25 +124,29 @@ def _load_onnx_model() -> None:
         _onnx_input_rank = None
         _load_error = f"Failed to load ONNX model: {exc}"
 
-
 def is_model_loaded() -> bool:
     return USE_STUB_MODEL or _onnx_session is not None
-
 
 def get_model_load_error() -> str | None:
     return _load_error
 
+# Helper function to convert probability to confidence
+def _derive_confidence_from_prob(prob):
+    if prob <= AI_THRESHOLD:
+        return "ai-generated", (prob / AI_THRESHOLD)
+    elif prob >= REAL_THRESHOLD:
+        return "real", ((prob - REAL_THRESHOLD) / AI_THRESHOLD)
+    else:
+        return "unknown", ((prob - AI_THRESHOLD) / AI_THRESHOLD)
 
-def _predict_stub(image: Image.Image) -> dict[str, Any]:
-    if image.mode != "RGB":
-        image = image.convert("RGB")
+# --- INFERENCE ---
+def predict_image(image: Image.Image) -> dict[str, Any]:
+    if USE_STUB_MODEL:
+        prob =  _predict_stub(image)
+    else:
+        prob = _predict_onnx(image)
 
-    small = image.resize((32, 32))
-    payload = small.tobytes() + f"{image.size}".encode("utf-8")
-    digest = hashlib.sha256(payload).digest()
-
-    p_ai = digest[0] / 255.0
-    label, confidence = derive_confidence_from_prob(p_ai)
+    label, confidence = _derive_confidence_from_prob(prob)
 
     return {
         "label": label,
@@ -151,110 +155,43 @@ def _predict_stub(image: Image.Image) -> dict[str, Any]:
         "model_version": MODEL_VERSION,
     }
 
+def _predict_stub(image: Image.Image) -> float:
+    if image.mode != "RGB":
+        image = image.convert("RGB")
 
-def _resize_for_model(image: Image.Image) -> Image.Image:
-    size = (MODEL_INPUT_SIZE, MODEL_INPUT_SIZE)
+    small = image.resize((32, 32))
+    payload = small.tobytes() + f"{image.size}".encode("utf-8")
+    digest = hashlib.sha256(payload).digest()
 
-    if MODEL_RESIZE_MODE == "center_crop":
-        return ImageOps.fit(
-            image,
-            size,
-            method=RESAMPLE_FILTER,
-            centering=(0.5, 0.5),
-        )
+    p_ai = digest[0] / 255.0
+    return p_ai
 
-    if MODEL_RESIZE_MODE == "letterbox":
-        contained = ImageOps.contain(image, size, method=RESAMPLE_FILTER)
-        canvas = Image.new("RGB", size, (0, 0, 0))
-        offset = (
-            (MODEL_INPUT_SIZE - contained.width) // 2,
-            (MODEL_INPUT_SIZE - contained.height) // 2,
-        )
-        canvas.paste(contained, offset)
-        return canvas
+def evaluate(image: Image.Image) -> float:
+    """Returns confidence value 0 to 1 (0=FAKE, 1=REAL)."""
+    if _onnx_session is None:
+        raise ValueError("Onnx session is none.")
+    if _onnx_input_name is None:
+        raise ValueError("ONNX input name is unknown.")
 
-    return image.resize(size, resample=RESAMPLE_FILTER)
+    transform = transforms.Compose([
+        transforms.Resize((32, 32)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
 
+    img_tensor = transform(image.convert("RGB")).unsqueeze(0)
+    img_numpy = img_tensor.numpy().astype(np.float32, copy=False)
+    outputs = _onnx_session.run(None, {_onnx_input_name: img_numpy})
 
-def _preprocess_image(image: Image.Image) -> np.ndarray:
-    """
-    ONNX preprocessing for a 32 x 32 RGB model.
+    confidence = float(outputs[0].flatten()[0])
+    return max(0.0, min(1.0, confidence))
 
-    The model contract follows the PyTorch image convention: C,H,W.
-    PIL/numpy images arrive as H,W,C, so channels are moved first.
-    """
-    rgb = _resize_for_model(image.convert("RGB"))
-    array = np.asarray(rgb, dtype=np.float32) / 255.0
-    chw = np.transpose(array, (2, 0, 1))
-    chw = np.ascontiguousarray(chw, dtype=np.float32)
-
-    if _onnx_input_rank == 3:
-        return chw
-
-    return np.expand_dims(chw, axis=0)
-
-
-def _probability_from_outputs(outputs: list[np.ndarray]) -> float:
-    if not outputs:
-        raise ModelAdapterError("ONNX model returned no outputs.")
-
-    output = np.asarray(outputs[0]).squeeze()
-
-    if output.size == 1:
-        value = float(output.item())
-        if 0.0 <= value <= 1.0:
-            return value
-
-        return float(1.0 / (1.0 + np.exp(-value)))
-
-    if output.size >= 2:
-        flat = output.reshape(-1).astype(np.float64)
-
-        if np.all((0.0 <= flat) & (flat <= 1.0)) and np.isclose(np.sum(flat), 1.0):
-            return float(flat[1])
-
-        shifted = flat - np.max(flat)
-        probs = np.exp(shifted) / np.sum(np.exp(shifted))
-        return float(probs[1])
-
-    raise ModelAdapterError("ONNX model output shape is unsupported.")
-
-
-def _predict_onnx(image: Image.Image) -> dict[str, Any]:
+def _predict_onnx(image: Image.Image) -> float:
     if _onnx_session is None or _onnx_input_name is None:
         message = _load_error or "ONNX model is not loaded."
         raise ModelAdapterError(message)
 
-    tensor = _preprocess_image(image)
-    outputs = _onnx_session.run(None, {_onnx_input_name: tensor})
-    p_ai = _probability_from_outputs(outputs)
-    p_ai = max(0.0, min(1.0, float(p_ai)))
-
-    label, confidence = derive_confidence_from_prob(p_ai)
-
-    return {
-        "label": label,
-        "confidence": float(confidence),
-        "explanation": PLACEHOLDER_EXPLANATION,
-        "model_version": MODEL_VERSION,
-    }
-
-
-def predict_image(image: Image.Image) -> dict[str, Any]:
-    if USE_STUB_MODEL:
-        return _predict_stub(image)
-
-    return _predict_onnx(image)
-
-
-def derive_confidence_from_prob(prob):
-    if prob <= AI_THRESHOLD:
-        return "ai-generated", (prob / AI_THRESHOLD)
-    elif prob >= REAL_THRESHOLD:
-        return "real", ((prob - REAL_THRESHOLD) / AI_THRESHOLD)
-    else:
-        return "unknown", ((prob - AI_THRESHOLD) / AI_THRESHOLD)
-
-
+    p_ai = evaluate(image)
+    return p_ai
 
 _load_onnx_model()

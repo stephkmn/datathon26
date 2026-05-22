@@ -147,31 +147,22 @@ def test_stub_prediction_is_deterministic_and_uses_allowed_labels():
     assert 0.0 <= first["confidence"] <= 1.0
 
 
-def test_preprocess_image_uses_pytorch_channel_first_shape():
+def test_evaluate_accepts_pil_image_and_uses_loaded_input_name(monkeypatch):
+    class FakeSession:
+        def run(self, output_names, feed):
+            assert output_names is None
+            assert set(feed) == {"model_input"}
+            tensor = feed["model_input"]
+            assert tensor.shape == (1, 3, 32, 32)
+            assert tensor.dtype == np.float32
+            return [np.array([[0.8]], dtype=np.float32)]
+
+    monkeypatch.setattr(model_adapter, "_onnx_session", FakeSession())
+    monkeypatch.setattr(model_adapter, "_onnx_input_name", "model_input")
+
     image = Image.new("RGB", (64, 48), (255, 0, 0))
 
-    tensor = model_adapter._preprocess_image(image)
-
-    assert tensor.shape == (1, 3, 32, 32)
-    assert tensor.dtype == np.float32
-    assert tensor.flags["C_CONTIGUOUS"]
-    assert np.allclose(tensor[0, 0], 1.0)
-    assert np.allclose(tensor[0, 1], 0.0)
-    assert np.allclose(tensor[0, 2], 0.0)
-
-
-@pytest.mark.parametrize(
-    ("outputs", "expected"),
-    [
-        ([np.array([0.8], dtype=np.float32)], 0.8),
-        ([np.array([0.2, 0.8], dtype=np.float32)], 0.8),
-        ([np.array([0.0, 2.0], dtype=np.float32)], 0.8807970779778823),
-    ],
-)
-def test_probability_from_outputs_handles_common_model_outputs(outputs, expected):
-    p_ai = model_adapter._probability_from_outputs(outputs)
-
-    assert p_ai == pytest.approx(expected)
+    assert model_adapter.evaluate(image) == pytest.approx(0.8)
 
 
 def test_root_env_disables_stub_and_points_to_onnx_model():
