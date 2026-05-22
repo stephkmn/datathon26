@@ -12,7 +12,7 @@ from PIL import Image
 LabelValue = str
 
 PLACEHOLDER_EXPLANATION = (
-    "Placeholder explanation. Detailed model explanation is not implemented in the MVP."
+    "Explanation placeholder."
 )
 
 MODEL_PATH = os.getenv("MODEL_PATH", "").strip()
