@@ -18,9 +18,9 @@ PLACEHOLDER_EXPLANATION = (
 MODEL_PATH = os.getenv("MODEL_PATH", "").strip()
 MODEL_VERSION = os.getenv("MODEL_VERSION", "stub-v0").strip() or "stub-v0"
 try:
-    MODEL_INPUT_SIZE = int(os.getenv("MODEL_INPUT_SIZE", "224"))
+    MODEL_INPUT_SIZE = int(os.getenv("MODEL_INPUT_SIZE", "32"))
 except ValueError:
-    MODEL_INPUT_SIZE = 224
+    MODEL_INPUT_SIZE = 32
 
 
 def _env_bool(name: str) -> bool | None:
@@ -42,6 +42,7 @@ USE_STUB_MODEL = _USE_STUB_OVERRIDE if _USE_STUB_OVERRIDE is not None else not M
 
 _onnx_session: Any | None = None
 _onnx_input_name: str | None = None
+_onnx_input_rank: int | None = None
 _load_error: str | None = None
 
 
@@ -50,7 +51,7 @@ class ModelAdapterError(RuntimeError):
 
 
 def _load_onnx_model() -> None:
-    global _onnx_input_name, _onnx_session, _load_error
+    global _onnx_input_name, _onnx_input_rank, _onnx_session, _load_error
 
     if USE_STUB_MODEL:
         return
@@ -71,11 +72,14 @@ def _load_onnx_model() -> None:
             str(path),
             providers=["CPUExecutionProvider"],
         )
-        _onnx_input_name = _onnx_session.get_inputs()[0].name
+        model_input = _onnx_session.get_inputs()[0]
+        _onnx_input_name = model_input.name
+        _onnx_input_rank = len(model_input.shape)
         _load_error = None
     except Exception as exc:
         _onnx_session = None
         _onnx_input_name = None
+        _onnx_input_rank = None
         _load_error = f"Failed to load ONNX model: {exc}"
 
 
@@ -109,14 +113,19 @@ def _predict_stub(image: Image.Image) -> dict[str, Any]:
 
 def _preprocess_image(image: Image.Image) -> np.ndarray:
     """
-    Temporary ONNX preprocessing.
+    ONNX preprocessing for a 32 x 32 RGB model.
 
-    Update this helper once the training team confirms image size,
-    normalization, and channel order.
+    The model contract follows the PyTorch image convention: C,H,W.
+    PIL/numpy images arrive as H,W,C, so channels are moved first.
     """
     rgb = image.convert("RGB").resize((MODEL_INPUT_SIZE, MODEL_INPUT_SIZE))
     array = np.asarray(rgb, dtype=np.float32) / 255.0
     chw = np.transpose(array, (2, 0, 1))
+    chw = np.ascontiguousarray(chw, dtype=np.float32)
+
+    if _onnx_input_rank == 3:
+        return chw
+
     return np.expand_dims(chw, axis=0)
 
 
