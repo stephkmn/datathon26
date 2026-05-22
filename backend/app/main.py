@@ -26,7 +26,7 @@ ALLOWED_LABELS = {"ai-generated", "real"}
 
 
 def parse_allowed_origins() -> list[str]:
-    raw = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173")
+    raw = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,chrome-extension://iojpmiidhgojhlmejngfkhecofkiejfc")
     return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 
