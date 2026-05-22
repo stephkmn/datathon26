@@ -1,5 +1,6 @@
 # backend/app/main.py
 
+import logging
 import os
 from typing import cast
 
@@ -22,7 +23,8 @@ from app.schemas import (
 )
 
 
-ALLOWED_LABELS = {"ai-generated", "real"}
+ALLOWED_LABELS = {"ai-generated", "real", "unknown"}
+logger = logging.getLogger(__name__)
 
 
 def parse_allowed_origins() -> list[str]:
@@ -94,6 +96,7 @@ async def detect_url(payload: ImageUrlRequest) -> DetectionResponse:
     try:
         prediction = predict_image(image)
     except Exception:
+        logger.exception("Model inference failed for URL input.")
         api_error(
             status_code=500,
             code="model_inference_failure",
@@ -110,6 +113,7 @@ async def detect_file(image: UploadFile = File(...)) -> DetectionResponse:
     try:
         prediction = predict_image(pil_image)
     except Exception:
+        logger.exception("Model inference failed for file input.")
         api_error(
             status_code=500,
             code="model_inference_failure",

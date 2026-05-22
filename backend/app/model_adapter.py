@@ -6,8 +6,10 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 
+AI_THRESHOLD = 0.33
+REAL_THRESHOLD = 0.67
 
 LabelValue = str
 
@@ -21,6 +23,18 @@ try:
     MODEL_INPUT_SIZE = int(os.getenv("MODEL_INPUT_SIZE", "32"))
 except ValueError:
     MODEL_INPUT_SIZE = 32
+MODEL_RESAMPLE = os.getenv("MODEL_RESAMPLE", "bilinear").strip().lower()
+MODEL_RESIZE_MODE = os.getenv("MODEL_RESIZE_MODE", "stretch").strip().lower()
+
+RESAMPLE_FILTERS = {
+    "nearest": Image.Resampling.NEAREST,
+    "box": Image.Resampling.BOX,
+    "bilinear": Image.Resampling.BILINEAR,
+    "hamming": Image.Resampling.HAMMING,
+    "bicubic": Image.Resampling.BICUBIC,
+    "lanczos": Image.Resampling.LANCZOS,
+}
+RESAMPLE_FILTER = RESAMPLE_FILTERS.get(MODEL_RESAMPLE, Image.Resampling.BILINEAR)
 
 
 def _env_bool(name: str) -> bool | None:
@@ -100,8 +114,7 @@ def _predict_stub(image: Image.Image) -> dict[str, Any]:
     digest = hashlib.sha256(payload).digest()
 
     p_ai = digest[0] / 255.0
-    label: LabelValue = "ai-generated" if p_ai >= 0.5 else "real"
-    confidence = p_ai if label == "ai-generated" else 1.0 - p_ai
+    label, confidence = derive_confidence_from_prob(p_ai)
 
     return {
         "label": label,
@@ -111,6 +124,30 @@ def _predict_stub(image: Image.Image) -> dict[str, Any]:
     }
 
 
+def _resize_for_model(image: Image.Image) -> Image.Image:
+    size = (MODEL_INPUT_SIZE, MODEL_INPUT_SIZE)
+
+    if MODEL_RESIZE_MODE == "center_crop":
+        return ImageOps.fit(
+            image,
+            size,
+            method=RESAMPLE_FILTER,
+            centering=(0.5, 0.5),
+        )
+
+    if MODEL_RESIZE_MODE == "letterbox":
+        contained = ImageOps.contain(image, size, method=RESAMPLE_FILTER)
+        canvas = Image.new("RGB", size, (0, 0, 0))
+        offset = (
+            (MODEL_INPUT_SIZE - contained.width) // 2,
+            (MODEL_INPUT_SIZE - contained.height) // 2,
+        )
+        canvas.paste(contained, offset)
+        return canvas
+
+    return image.resize(size, resample=RESAMPLE_FILTER)
+
+
 def _preprocess_image(image: Image.Image) -> np.ndarray:
     """
     ONNX preprocessing for a 32 x 32 RGB model.
@@ -118,7 +155,7 @@ def _preprocess_image(image: Image.Image) -> np.ndarray:
     The model contract follows the PyTorch image convention: C,H,W.
     PIL/numpy images arrive as H,W,C, so channels are moved first.
     """
-    rgb = image.convert("RGB").resize((MODEL_INPUT_SIZE, MODEL_INPUT_SIZE))
+    rgb = _resize_for_model(image.convert("RGB"))
     array = np.asarray(rgb, dtype=np.float32) / 255.0
     chw = np.transpose(array, (2, 0, 1))
     chw = np.ascontiguousarray(chw, dtype=np.float32)
@@ -165,8 +202,7 @@ def _predict_onnx(image: Image.Image) -> dict[str, Any]:
     p_ai = _probability_from_outputs(outputs)
     p_ai = max(0.0, min(1.0, float(p_ai)))
 
-    label: LabelValue = "ai-generated" if p_ai >= 0.5 else "real"
-    confidence = p_ai if label == "ai-generated" else 1.0 - p_ai
+    label, confidence = derive_confidence_from_prob(p_ai)
 
     return {
         "label": label,
@@ -181,6 +217,16 @@ def predict_image(image: Image.Image) -> dict[str, Any]:
         return _predict_stub(image)
 
     return _predict_onnx(image)
+
+
+def derive_confidence_from_prob(prob):
+    if prob <= AI_THRESHOLD:
+        return "ai-generated", (prob / AI_THRESHOLD)
+    elif prob >= REAL_THRESHOLD:
+        return "real", ((prob - REAL_THRESHOLD) / AI_THRESHOLD)
+    else:
+        return "unknown", ((prob - AI_THRESHOLD) / AI_THRESHOLD)
+
 
 
 _load_onnx_model()
