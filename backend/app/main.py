@@ -1,18 +1,28 @@
 # backend/app/main.py
 
 import os
-
-from schemas import InputType, Label
+from typing import cast
 
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.image_utils import api_error, fetch_image_from_url, load_upload_as_image
-from app.model_adapter import MODEL_VERSION, PLACEHOLDER_EXPLANATION, predict_image
-from app.schemas import DetectionResponse, HealthResponse, ImageUrlRequest
+from app.model_adapter import (
+    MODEL_VERSION,
+    PLACEHOLDER_EXPLANATION,
+    is_model_loaded,
+    predict_image,
+)
+from app.schemas import (
+    DetectionResponse,
+    HealthResponse,
+    ImageUrlRequest,
+    InputType,
+    Label,
+)
 
 
-ALLOWED_LABELS = {"ai_generated", "real"}
+ALLOWED_LABELS = {"ai-generated", "real"}
 
 
 def parse_allowed_origins() -> list[str]:
@@ -39,21 +49,29 @@ app.add_middleware(
 async def health() -> HealthResponse:
     return HealthResponse(
         status="ok",
-        model_loaded=True,
+        model_loaded=is_model_loaded(),
         model_version=MODEL_VERSION,
     )
 
 
 def build_detection_response(prediction: dict, input_type: InputType) -> DetectionResponse:
-    label = prediction.get("label", "unknown")
+    label = prediction.get("label")
 
     if label not in ALLOWED_LABELS:
-        raise ValueError("Invalid label.")
+        api_error(
+            status_code=500,
+            code="model_inference_failure",
+            message="Model returned an unsupported label.",
+        )
 
     try:
         confidence = float(prediction.get("confidence", 0.0))
-    except TypeError:
-        confidence = 0.0
+    except (TypeError, ValueError):
+        api_error(
+            status_code=500,
+            code="model_inference_failure",
+            message="Model returned an invalid confidence score.",
+        )
 
     confidence = max(0.0, min(1.0, confidence))
 
@@ -61,7 +79,7 @@ def build_detection_response(prediction: dict, input_type: InputType) -> Detecti
     model_version = prediction.get("model_version") or MODEL_VERSION
 
     return DetectionResponse(
-        label=label,
+        label=cast(Label, label),
         confidence=confidence,
         explanation=explanation,
         model_version=model_version,

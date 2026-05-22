@@ -5,7 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
-Label = Literal["ai_generated", "real"]
+Label = Literal["ai-generated", "real"]
 InputType = Literal["url", "file"]
 
 

@@ -2,7 +2,7 @@
 
 ``` JSON
 {
-  "label": "ai_generated",
+  "label": "ai-generated",
   "confidence": 0.87,
   "explanation": "Placeholder explanation. Detailed model explanation is not implemented in the MVP.",
   "model_version": "stub-v0",
@@ -10,4 +10,4 @@
 }
 ```
 
-Allowed labels: "ai_generated", "real"
+Allowed labels: "ai-generated", "real"
