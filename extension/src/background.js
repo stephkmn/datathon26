@@ -1,6 +1,7 @@
+import { detectUrl } from "./ml/detector.js";
+
 const CONTEXT_MENU_ID = "check-ai-image";
 const LATEST_SCAN_KEY = "latestScan";
-const BACKEND_URL = "http://localhost:8000";
 
 const emptyScanState = {
   status: "idle",
@@ -16,28 +17,6 @@ async function setLatestScan(state) {
       ...state,
     },
   });
-}
-
-async function detectImageUrl(imageUrl) {
-  const response = await fetch(`${BACKEND_URL}/detect/url`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      image_url: imageUrl,
-    }),
-  });
-
-  const data = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    const message =
-      data?.detail?.message || data?.message || "Backend request failed.";
-    throw new Error(message);
-  }
-
-  return data;
 }
 
 function createContextMenu() {
@@ -64,7 +43,7 @@ chrome.contextMenus.onClicked.addListener(async (info) => {
   });
 
   try {
-    const result = await detectImageUrl(info.srcUrl);
+    const result = await detectUrl(info.srcUrl);
 
     await setLatestScan({
       status: "success",
