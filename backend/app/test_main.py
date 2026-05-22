@@ -1,5 +1,6 @@
 import importlib
 import io
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -22,14 +23,14 @@ def make_image_bytes(
     return buffer.getvalue()
 
 
-def test_health_reports_stub_model_loaded():
+def test_health_reports_onnx_model_loaded_from_root_env():
     response = client.get("/health")
 
     assert response.status_code == 200
     assert response.json() == {
         "status": "ok",
         "model_loaded": True,
-        "model_version": "stub-v0",
+        "model_version": "v1.0",
     }
 
 
@@ -44,10 +45,10 @@ def test_detect_file_accepts_supported_image_and_returns_contract():
     assert response.status_code == 200
 
     body = response.json()
-    assert body["label"] in {"ai-generated", "real"}
+    assert body["label"] in {"ai-generated", "real", "unknown"}
     assert 0.0 <= body["confidence"] <= 1.0
     assert body["explanation"]
-    assert body["model_version"] == "stub-v0"
+    assert body["model_version"] == "v1.0"
     assert body["input_type"] == "file"
 
 
@@ -107,7 +108,7 @@ def test_build_detection_response_rejects_unsupported_model_label():
     with pytest.raises(Exception) as exc_info:
         main.build_detection_response(
             {
-                "label": "unknown",
+                "label": "unsupported",
                 "confidence": 0.9,
                 "explanation": "bad label",
                 "model_version": "test",
@@ -173,9 +174,32 @@ def test_probability_from_outputs_handles_common_model_outputs(outputs, expected
     assert p_ai == pytest.approx(expected)
 
 
+def test_root_env_disables_stub_and_points_to_onnx_model():
+    assert model_adapter.USE_STUB_MODEL is False
+    assert Path(model_adapter.MODEL_PATH).name == "model.onnx"
+    assert Path(model_adapter.MODEL_PATH).exists()
+    assert model_adapter.MODEL_VERSION == "v1.0"
+
+
+def test_relative_model_path_resolves_from_backend_directory(monkeypatch):
+    monkeypatch.chdir(model_adapter.BACKEND_ROOT)
+
+    resolved = model_adapter._resolve_model_path("model/model.onnx")
+
+    assert Path(resolved) == (model_adapter.BACKEND_ROOT / "model/model.onnx").resolve()
+
+
+def test_relative_model_path_resolves_from_repo_root(monkeypatch):
+    monkeypatch.chdir(model_adapter.REPO_ROOT)
+
+    resolved = model_adapter._resolve_model_path("model/model.onnx")
+
+    assert Path(resolved) == (model_adapter.BACKEND_ROOT / "model/model.onnx").resolve()
+
+
 def test_onnx_mode_without_model_path_does_not_crash(monkeypatch):
     monkeypatch.setenv("USE_STUB_MODEL", "false")
-    monkeypatch.delenv("MODEL_PATH", raising=False)
+    monkeypatch.setenv("MODEL_PATH", "")
 
     reloaded = importlib.reload(model_adapter)
 
@@ -184,4 +208,5 @@ def test_onnx_mode_without_model_path_does_not_crash(monkeypatch):
         assert "MODEL_PATH is required" in reloaded.get_model_load_error()
     finally:
         monkeypatch.delenv("USE_STUB_MODEL", raising=False)
+        monkeypatch.delenv("MODEL_PATH", raising=False)
         importlib.reload(model_adapter)

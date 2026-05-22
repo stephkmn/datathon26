@@ -7,6 +7,12 @@ from typing import Any
 
 import numpy as np
 from PIL import Image, ImageOps
+from dotenv import load_dotenv
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
+
+load_dotenv(REPO_ROOT / ".env")
 
 AI_THRESHOLD = 0.33
 REAL_THRESHOLD = 0.67
@@ -17,7 +23,29 @@ PLACEHOLDER_EXPLANATION = (
     "Explanation placeholder."
 )
 
-MODEL_PATH = os.getenv("MODEL_PATH", "").strip()
+def _resolve_model_path(model_path: str) -> str:
+    if not model_path.strip():
+        return ""
+
+    raw_path = Path(model_path).expanduser()
+
+    if raw_path.is_absolute():
+        return str(raw_path.resolve())
+
+    candidates = [
+        Path.cwd() / raw_path,
+        REPO_ROOT / raw_path,
+        BACKEND_ROOT / raw_path,
+    ]
+
+    for candidate in candidates:
+        if candidate.exists():
+            return str(candidate.resolve())
+
+    return str((REPO_ROOT / raw_path).resolve())
+
+
+MODEL_PATH = _resolve_model_path(os.getenv("MODEL_PATH", ""))
 MODEL_VERSION = os.getenv("MODEL_VERSION", "stub-v0").strip() or "stub-v0"
 try:
     MODEL_INPUT_SIZE = int(os.getenv("MODEL_INPUT_SIZE", "32"))
