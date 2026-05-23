@@ -76,3 +76,6 @@ A browser extension that checks whether an image appears to be AI-generated or r
 - To check an image on a webpage, right-click the image and choose **Check if image is AI-generated**.
 
 After making code changes, run `npm run build` again and click the reload button for the extension on `chrome://extensions`.
+
+## Credits
+This project was built by Angel Ramirez (ramz.angel11@gmail.com) and Stephanie Noe (khinenoe@outlook.com) for AI X Data 2.0.
