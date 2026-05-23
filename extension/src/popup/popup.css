@@ -1,13 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
-  color: #171717;
+  font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  color: #1a1a1a;
   background: #ffffff;
 }
 
@@ -16,85 +16,164 @@ input {
   font: inherit;
 }
 
+/* ── Card shell ── */
 .popup {
-  width: 340px;
-  min-height: 360px;
-  padding: 16px;
+  width: 320px;
+  min-height: 420px;
+  padding: 28px 24px 32px;
+  background: #dde8c9;          /* soft sage green */
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
 }
 
+/* ── Title ── */
 h1 {
-  margin: 0 0 16px;
-  font-size: 20px;
-  line-height: 1.2;
+  margin: 0 0 18px;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #c08070;               /* warm salmon/coral */
+  text-align: center;
 }
 
-.field {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 12px;
-  font-size: 14px;
-}
-
-input[type="file"] {
+/* ── Upload button (styled like a pill input row) ── */
+.upload-row {
   width: 100%;
+  margin-bottom: 24px;
 }
 
-button {
+.upload-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 8px;
+  background: #a8b4cc;          /* muted periwinkle/lavender */
+  color: #1a1a1a;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  user-select: none;
+}
+
+.upload-label:hover {
+  background: #96a3bc;
+}
+
+.upload-label input[type="file"] {
+  display: none;
+}
+
+/* ── Check button ── */
+.check-btn {
   width: 100%;
   min-height: 40px;
-  border: 0;
-  border-radius: 6px;
-  color: #ffffff;
-  background: #2563eb;
+  border: none;
+  border-radius: 8px;
+  background: #8fa88f;          /* muted green, slightly darker than bg */
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
+  margin-bottom: 20px;
+  transition: background 0.15s ease, opacity 0.15s ease;
 }
 
-button:disabled {
+.check-btn:hover:not(:disabled) {
+  background: #7d967d;
+}
+
+.check-btn:disabled {
+  opacity: 0.55;
   cursor: not-allowed;
-  opacity: 0.65;
 }
 
-.status {
-  margin: 14px 0 8px;
-  font-size: 14px;
+/* ── Divider ── */
+.divider {
+  width: 100%;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.12);
+  margin-bottom: 20px;
 }
 
-.status-error,
-.error {
-  color: #b91c1c;
+/* ── Result area ── */
+.result-area {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
-.error {
-  margin: 0 0 12px;
-  font-size: 13px;
+.result-intro {
+  font-size: 15px;
+  font-weight: 400;
+  color: #2a2a2a;
+  margin: 0 0 10px;
 }
 
-.result {
-  margin-top: 12px;
-  border-top: 1px solid #e5e5e5;
-  padding-top: 12px;
-}
-
-dl {
-  display: grid;
-  gap: 10px;
-  margin: 0;
-}
-
-dl > div {
-  display: grid;
-  gap: 2px;
-}
-
-dt {
-  font-size: 12px;
+/* ── Big label ── */
+.result-label {
+  font-size: 32px;
   font-weight: 700;
-  color: #525252;
+  color: #1a1a1a;
+  margin: 0 0 20px;
+  line-height: 1.15;
 }
 
-dd {
-  margin: 0;
+.result-label.unknown {
+  font-size: 15px;
+  font-weight: 500;
+  color: #555;
+}
+
+/* ── Confidence sentence ── */
+.result-confidence {
   font-size: 14px;
-  line-height: 1.4;
-  overflow-wrap: anywhere;
+  color: #2a2a2a;
+  line-height: 1.5;
+  margin: 0 0 24px;
+}
+
+/* ── Source line ── */
+.result-source {
+  font-size: 14px;
+  color: #2a2a2a;
+  margin: 0;
+}
+
+.result-source span {
+  font-weight: 600;
+}
+
+/* ── Loading state ── */
+.loading-text {
+  font-size: 14px;
+  color: #555;
+  margin: 8px 0;
+  font-style: italic;
+}
+
+/* ── Error ── */
+.error-text {
+  font-size: 14px;
+  color: #9b2c2c;
+  margin: 8px 0;
+  line-height: 1.45;
+}
+
+/* ── Hidden status (visually hidden but keeps space for a11y) ── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
