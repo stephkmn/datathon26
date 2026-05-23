@@ -129,7 +129,7 @@ export default function Popup() {
               <>
                 <p className="result-intro">The given image is most likely:</p>
 
-                <p className="result-label" style={{color: result.label === "ai-generated" ? "#f20c0c" : "#216f07"}}>{result.label }</p>
+                <p className="result-label" style={{color: result.label === "ai-generated" ? "#d40909" : "#216f07"}}>{result.label === "real" ? "Real" : "AI-Generated"}</p>
 
                 {result.confidence != null && (
                   <p className="result-confidence">
