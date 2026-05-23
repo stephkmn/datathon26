@@ -72,7 +72,18 @@ export default function Popup() {
   return (
     <main className="popup">
       {/* Title */}
+      <div className="title-row">
       <h1>Verifai</h1>
+      
+      <a href="https://github.com/stephkmn/datathon26/blob/main/Responsible%20AI%20Statement.pdf"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="info-btn"
+        title="Privacy Policy"
+      >
+        i
+      </a>
+    </div>
 
       {/* Upload row */}
       <div className="upload-row">
@@ -118,7 +129,7 @@ export default function Popup() {
               <>
                 <p className="result-intro">The given image is most likely:</p>
 
-                <p className="result-label" style={{color: result.label === "ai-generated" ? "#8c4c4c" : "#5d7340"}}>{result.label }</p>
+                <p className="result-label" style={{color: result.label === "ai-generated" ? "#f20c0c" : "#216f07"}}>{result.label }</p>
 
                 {result.confidence != null && (
                   <p className="result-confidence">

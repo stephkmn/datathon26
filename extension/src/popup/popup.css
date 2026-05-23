@@ -1,5 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
 
+:root{
+  --main-text-color: #1c1917;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -7,7 +11,7 @@
 body {
   margin: 0;
   font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
-  color: #2a2a2a;
+  color: var(--main-text-color);
   border-radius: 14px;
 }
 
@@ -21,7 +25,7 @@ input {
   width: 320px;
   min-height: 420px;
   padding: 28px 24px 32px;
-  background-image: linear-gradient(#d6c9e8, #ecf2e1);          /* soft sage green */
+  background: #fff8f0;          
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -35,14 +39,48 @@ h1 {
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #2a2a2a;          
+  color: var(--main-text-color);          
   text-align: center;
+}
+
+.title-row {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+.info-btn {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #888;
+  color: #888;
+  font-size: 12px;
+  font-style: italic;
+  font-family: Georgia, serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  line-height: 1;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.info-btn:hover {
+  border-color: #333;
+  color: #333;
 }
 
 /* ── Upload button (styled like a pill input row) ── */
 .upload-row {
   width: 100%;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .upload-label {
@@ -53,8 +91,8 @@ h1 {
   min-height: 42px;
   padding: 0 16px;
   border-radius: 8px;
-  background: #a8b4cc;          /* muted periwinkle/lavender */
-  color: #1a1a1a;
+  background: #f97316;          /* muted periwinkle/lavender */
+  color: #fff;
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
@@ -63,7 +101,7 @@ h1 {
 }
 
 .upload-label:hover {
-  background: #96a3bc;
+  background: #f58230;
 }
 
 .upload-label input[type="file"] {
@@ -76,7 +114,7 @@ h1 {
   min-height: 40px;
   border: none;
   border-radius: 8px;
-  background: #8fa88f;          /* muted green, slightly darker than bg */
+  background: #be123c;          /* muted green, slightly darker than bg */
   color: #fff;
   font-size: 14px;
   font-weight: 600;
@@ -86,7 +124,7 @@ h1 {
 }
 
 .check-btn:hover:not(:disabled) {
-  background: #7d967d;
+  background: #d62652;
 }
 
 .check-btn:disabled {
@@ -113,7 +151,7 @@ h1 {
 .result-intro {
   font-size: 15px;
   font-weight: 400;
-  color: #2a2a2a;
+  color: var(--main-text-color);
   margin: 0 0 10px;
 }
 
@@ -121,7 +159,8 @@ h1 {
 .result-label {
   font-size: 32px;
   font-weight: 700;
-  color: #5d7340;
+  text-transform:capitalize;
+  color: var(--main-text-color);
   margin: 0 0 20px;
   line-height: 1.15;
 }
@@ -129,13 +168,13 @@ h1 {
 .result-label.unknown {
   font-size: 15px;
   font-weight: 500;
-  color: #555;
+  color: var(--main-text-color);
 }
 
 /* ── Confidence sentence ── */
 .result-confidence {
   font-size: 14px;
-  color: #2a2a2a;
+  color: var(--main-text-color);
   line-height: 1.5;
   margin: 0 0 24px;
 }
@@ -143,7 +182,7 @@ h1 {
 /* ── Source line ── */
 .result-source {
   font-size: 14px;
-  color: #2a2a2a;
+  color: var(--main-text-color);
   margin: 0;
 }
 
