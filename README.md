@@ -26,21 +26,42 @@ A browser extension that checks whether an image appears to be AI-generated or r
    npm run build
    ```
 
-3. Open Chrome and go to:
+   For Windows users:
+      package.json build script used the Unix cp command, it will fail in PowerShell/CMD
+      in /extension/package.json, replace
+         ```text
+           "scripts": {
+             "dev": "vite",
+             "build": "vite build && cp manifest.json dist/manifest.json",
+             "preview": "vite preview"
+           },
+         ```
+      with
+         ```text
+           "scripts": {
+             "dev": "vite",
+             "build": "vite build",
+             "watch": "vite build --watch",
+             "preview": "vite preview"
+           },
+         ```
+      Then move ```manifest.json``` from /extension to /extension/public
+
+4. Open Chrome and go to:
 
    ```text
    chrome://extensions
    ```
 
-4. Turn on **Developer mode**.
+5. Turn on **Developer mode**.
 
-5. Click **Load unpacked** and select the generated folder:
+6. Click **Load unpacked** and select the generated folder:
 
    ```text
    extension/dist
    ```
 
-6. Pin or open **Verifai** from the extensions menu.
+7. Pin or open **Verifai** from the extensions menu.
 
 ## Use the Extension
 
