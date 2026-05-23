@@ -26,7 +26,7 @@ A browser extension that checks whether an image appears to be AI-generated or r
    npm run build
    ```
 
-   For Windows users:
+   For Windows users ONLY:
    
       package.json build script used the Unix cp command, it will fail in PowerShell/CMD
    
