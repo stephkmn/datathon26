@@ -123,7 +123,7 @@ export default function Popup() {
 
             {isUnknown ? (
               <p className="result-label unknown">
-                We were unable to classify this image :(
+                Sorry, we were unable to classify this image :(
               </p>
             ) : (
               <>
