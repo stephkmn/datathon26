@@ -105,11 +105,7 @@ export default function Popup() {
             </div>
             <div>
               <dt>Confidence</dt>
-              <dd>{formatConfidence(result.confidence)}</dd>
-            </div>
-            <div>
-              <dt>Explanation</dt>
-              <dd>{result.explanation}</dd>
+              <dd>{result.label !== "unknown" ? formatConfidence(result.confidence) : "N/A"}</dd>
             </div>
             <div>
               <dt>Source</dt>

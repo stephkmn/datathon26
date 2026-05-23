@@ -109,7 +109,6 @@ function buildResult(probability, inputType) {
   return {
     label,
     confidence: Math.round(Math.max(0, Math.min(1, confidence)) * 100) / 100,
-    explanation: "Analyzed locally in the browser.",
     model_version: MODEL_VERSION,
     input_type: inputType,
   };
