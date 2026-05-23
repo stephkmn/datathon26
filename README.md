@@ -1,4 +1,4 @@
-# AI Image Detector
+# Verifai - AI Image detector
 
 A browser extension that checks whether an image appears to be AI-generated or real. Users can upload an image from the extension popup or right-click an image on a webpage and run detection from the context menu. The model runs locally in the browser using the bundled ONNX files.
 
@@ -40,7 +40,7 @@ A browser extension that checks whether an image appears to be AI-generated or r
    extension/dist
    ```
 
-6. Pin or open **AI Image Detector** from the extensions menu.
+6. Pin or open **Verifai** from the extensions menu.
 
 ## Use the Extension
 
