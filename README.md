@@ -27,8 +27,11 @@ A browser extension that checks whether an image appears to be AI-generated or r
    ```
 
    For Windows users:
+   
       package.json build script used the Unix cp command, it will fail in PowerShell/CMD
+   
       in /extension/package.json, replace
+   
          ```text
            "scripts": {
              "dev": "vite",
@@ -36,7 +39,9 @@ A browser extension that checks whether an image appears to be AI-generated or r
              "preview": "vite preview"
            },
          ```
+   
       with
+   
          ```text
            "scripts": {
              "dev": "vite",
@@ -45,7 +50,9 @@ A browser extension that checks whether an image appears to be AI-generated or r
              "preview": "vite preview"
            },
          ```
+   
       Then move ```manifest.json``` from /extension to /extension/public
+
 
 4. Open Chrome and go to:
 
