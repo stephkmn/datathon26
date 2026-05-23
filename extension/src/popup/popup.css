@@ -7,8 +7,8 @@
 body {
   margin: 0;
   font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
-  color: #1a1a1a;
-  background: #ffffff;
+  color: #2a2a2a;
+  border-radius: 14px;
 }
 
 button,
@@ -21,8 +21,7 @@ input {
   width: 320px;
   min-height: 420px;
   padding: 28px 24px 32px;
-  background: #dde8c9;          /* soft sage green */
-  border-radius: 14px;
+  background-image: linear-gradient(#d6c9e8, #ecf2e1);          /* soft sage green */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -36,7 +35,7 @@ h1 {
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #c08070;               /* warm salmon/coral */
+  color: #2a2a2a;          
   text-align: center;
 }
 
@@ -122,7 +121,7 @@ h1 {
 .result-label {
   font-size: 32px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: #5d7340;
   margin: 0 0 20px;
   line-height: 1.15;
 }

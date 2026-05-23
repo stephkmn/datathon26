@@ -17,10 +17,10 @@ function getConfidenceSentence(label, confidence) {
   if (typeof confidence !== "number") return null;
   const pct = Math.round(confidence * 100);
   if (label === "ai-generated") {
-    return `We are ${pct}% confident that the given photo is AI-generated.`;
+    return `We are ${pct}% confident that the given image is AI-generated.`;
   }
   if (label === "real") {
-    return `We are ${pct}% confident that the given photo is real.`;
+    return `We are ${pct}% confident that the given image is real.`;
   }
   return "";
 }
@@ -67,12 +67,12 @@ export default function Popup() {
 
   const isLoading = scanState.status === "loading";
   const result = scanState.result;
-  const isUnknown = result?.label === "Unknown" || !result?.label;
+  const isUnknown = result?.label === "unknown" || !result?.label;
 
   return (
     <main className="popup">
       {/* Title */}
-      <h1>AI Detector</h1>
+      <h1>Verifai</h1>
 
       {/* Upload row */}
       <div className="upload-row">
@@ -116,9 +116,9 @@ export default function Popup() {
               </p>
             ) : (
               <>
-                <p className="result-intro">Your image is most likely:</p>
+                <p className="result-intro">The given image is most likely:</p>
 
-                <p className="result-label">{result.label}</p>
+                <p className="result-label" style={{color: result.label === "ai-generated" ? "#8c4c4c" : "#5d7340"}}>{result.label }</p>
 
                 {result.confidence != null && (
                   <p className="result-confidence">
