@@ -33,7 +33,7 @@ def parse_allowed_origins() -> list[str]:
 
 
 app = FastAPI(
-    title="AI Image Detector API",
+    title="Verifai API",
     version="0.1.0",
 )
 

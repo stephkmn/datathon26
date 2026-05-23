@@ -9,11 +9,20 @@ import {
 } from "../utils/storage.js";
 
 function formatConfidence(value) {
-  if (typeof value !== "number") {
-    return "";
-  }
-
+  if (typeof value !== "number") return "";
   return `${Math.round(value * 100)}%`;
+}
+
+function getConfidenceSentence(label, confidence) {
+  if (typeof confidence !== "number") return null;
+  const pct = Math.round(confidence * 100);
+  if (label === "ai-generated") {
+    return `We are ${pct}% confident that the given image is AI-generated.`;
+  }
+  if (label === "real") {
+    return `We are ${pct}% confident that the given image is real.`;
+  }
+  return "";
 }
 
 export default function Popup() {
@@ -24,18 +33,12 @@ export default function Popup() {
     getLatestScan().then(setScanState);
 
     function handleStorageChange(changes, areaName) {
-      if (areaName !== "local" || !changes[LATEST_SCAN_KEY]) {
-        return;
-      }
-
+      if (areaName !== "local" || !changes[LATEST_SCAN_KEY]) return;
       setScanState(changes[LATEST_SCAN_KEY].newValue || EMPTY_SCAN_STATE);
     }
 
     chrome.storage.onChanged.addListener(handleStorageChange);
-
-    return () => {
-      chrome.storage.onChanged.removeListener(handleStorageChange);
-    };
+    return () => chrome.storage.onChanged.removeListener(handleStorageChange);
   }, []);
 
   async function handleUploadCheck() {
@@ -48,19 +51,11 @@ export default function Popup() {
       return;
     }
 
-    await setLatestScan({
-      status: "loading",
-      source: "uploaded file",
-    });
+    await setLatestScan({ status: "loading", source: "uploaded file" });
 
     try {
       const result = await detectFile(selectedFile);
-
-      await setLatestScan({
-        status: "success",
-        result,
-        source: "uploaded file",
-      });
+      await setLatestScan({ status: "success", result, source: "uploaded file" });
     } catch (error) {
       await setLatestScan({
         status: "error",
@@ -72,48 +67,74 @@ export default function Popup() {
 
   const isLoading = scanState.status === "loading";
   const result = scanState.result;
+  const isUnknown = result?.label === "unknown" || !result?.label;
 
   return (
     <main className="popup">
-      <h1>AI Image Detector</h1>
+      {/* Title */}
+      <h1>Verifai</h1>
 
-      <label className="field">
-        <span>Image file</span>
-        <input
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
-          onChange={(event) => setSelectedFile(event.target.files?.[0] || null)}
-        />
-      </label>
+      {/* Upload row */}
+      <div className="upload-row">
+        <label className="upload-label">
+          {selectedFile ? selectedFile.name : "Upload from computer"}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+          />
+        </label>
+      </div>
 
-      <button type="button" disabled={isLoading} onClick={handleUploadCheck}>
-        {isLoading ? "Checking..." : "Check uploaded image"}
+      {/* Check button */}
+      <button
+        type="button"
+        className="check-btn"
+        disabled={isLoading}
+        onClick={handleUploadCheck}
+      >
+        {isLoading ? "Checking…" : "Check image"}
       </button>
 
-      <p className={`status status-${scanState.status}`}>
-        Status: {scanState.status}
-      </p>
+      {/* Error */}
+      {scanState.error && (
+        <p className="error-text">{scanState.error}</p>
+      )}
 
-      {scanState.error ? <p className="error">{scanState.error}</p> : null}
+      {/* Loading */}
+      {isLoading && <p className="loading-text">Analyzing image…</p>}
 
-      {result ? (
-        <section className="result" aria-label="Detection result">
-          <dl>
-            <div>
-              <dt>Label</dt>
-              <dd>{result.label}</dd>
-            </div>
-            <div>
-              <dt>Confidence</dt>
-              <dd>{result.label !== "unknown" ? formatConfidence(result.confidence) : "N/A"}</dd>
-            </div>
-            <div>
-              <dt>Source</dt>
-              <dd>{scanState.source || result.input_type}</dd>
-            </div>
-          </dl>
-        </section>
-      ) : null}
+      {/* Result */}
+      {result && !isLoading && (
+        <>
+          <div className="divider" />
+          <div className="result-area" aria-label="Detection result">
+
+            {isUnknown ? (
+              <p className="result-label unknown">
+                We were unable to classify this image :(
+              </p>
+            ) : (
+              <>
+                <p className="result-intro">The given image is most likely:</p>
+
+                <p className="result-label" style={{color: result.label === "ai-generated" ? "#8c4c4c" : "#5d7340"}}>{result.label }</p>
+
+                {result.confidence != null && (
+                  <p className="result-confidence">
+                    {getConfidenceSentence(result.label, result.confidence)}
+                  </p>
+                )}
+              </>
+            )}
+
+            <p className="result-source">
+              Image source: <span>{scanState.source || result.input_type || "—"}</span>
+            </p>
+
+          </div>
+        </>
+      )}
     </main>
   );
 }

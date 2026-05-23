@@ -2,8 +2,8 @@ import * as ort from "onnxruntime-web/wasm";
 
 const MODEL_VERSION = "v1.0";
 const MODEL_SIZE = 32;
-const AI_THRESHOLD = 0.33;
-const REAL_THRESHOLD = 0.67;
+const AI_THRESHOLD = 0.25;
+const REAL_THRESHOLD = 0.75;
 const MEAN = [0.485, 0.456, 0.406];
 const STD = [0.229, 0.224, 0.225];
 
@@ -17,12 +17,12 @@ function getSession() {
   if (!sessionPromise) {
     ort.env.wasm.numThreads = 1;
 
-    sessionPromise = ort.InferenceSession.create(getRuntimeUrl("model.onnx"), {
+    sessionPromise = ort.InferenceSession.create(getRuntimeUrl("model2.onnx"), {
       executionProviders: ["wasm"],
       externalData: [
         {
-          path: "model.onnx.data",
-          data: getRuntimeUrl("model.onnx.data"),
+          path: "model2.onnx.data",
+          data: getRuntimeUrl("model2.onnx.data"),
         },
       ],
     });
@@ -85,14 +85,14 @@ function deriveLabelAndConfidence(probability) {
   if (probability <= AI_THRESHOLD) {
     return {
       label: "ai-generated",
-      confidence: probability / AI_THRESHOLD,
+      confidence: 1.0 - probability / AI_THRESHOLD,
     };
   }
 
   if (probability >= REAL_THRESHOLD) {
     return {
       label: "real",
-      confidence: (probability - REAL_THRESHOLD) / AI_THRESHOLD,
+      confidence: (probability - REAL_THRESHOLD) / (1.0 - REAL_THRESHOLD),
     };
   }
 
