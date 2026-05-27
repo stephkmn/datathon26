@@ -75,7 +75,7 @@ export default function Popup() {
       <div className="title-row">
       <h1>Verifai</h1>
       
-      <a href="https://github.com/stephkmn/datathon26/blob/main/Responsible%20AI%20Statement.pdf"
+      <a href="https://github.com/stephkmn/datathon26/blob/main/PRIVACY_POLICY.md"
         target="_blank"
         rel="noopener noreferrer"
         className="info-btn"
